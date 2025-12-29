@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Meine Media-Seite</title>
+</head>
+<body>
+
+<h1>Meine Media-Seite</h1>
+
+<!-- LOGIN -->
+<div id="auth">
+  <input id="email" type="email" placeholder="E-Mail">
+  <input id="password" type="password" placeholder="Passwort">
+  <br><br>
+  <button onclick="register()">Registrieren</button>
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- UPLOAD -->
+<div id="upload" style="display:none;">
+  <h2>?? Datei hochladen</h2>
+  <input type="file" id="file" accept="image/*,video/*">
+  <br><br>
+  <button onclick="uploadFile()">Hochladen</button>
+</div>
+
+<p id="status">?</p>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUUJhSLNPOgHhWUBnqWivLCMEuJL5PKmI",
+    authDomain: "meine-media-seite.firebaseapp.com",
+    projectId: "meine-media-seite",
+    storageBucket: "meine-media-seite.appspot.com",
+  };
+
+  firebase.initializeApp(firebaseConfig);
+
+  const auth = firebase.auth();
+  const storage = firebase.storage();
+  const db = firebase.firestore();
+
+  // LOGIN
+  function register() {
+    auth.createUserWithEmailAndPassword(email.value, password.value)
+      .catch(err => alert(err.message));
+  }
+
+  function login() {
+    auth.signInWithEmailAndPassword(email.value, password.value)
+      .catch(err => alert(err.message));
+  }
+
+  // STATUS + SICHTBARKEIT
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      status.innerText = "?? Eingeloggt als " + user.email;
+      upload.style.display = "block";
+    } else {
+      status.innerText = "?? Nicht eingeloggt";
+      upload.style.display = "none";
+    }
+  });
+
+  // UPLOAD
+  function uploadFile() {
+    const file = document.getElementById("file").files[0];
+    if (!file) {
+      alert("Bitte eine Datei auswählen");
+      return;
+    }
+
+    const ref = storage.ref("media/" + Date.now() + "_" + file.name);
+
+    ref.put(file).then(() => {
+      ref.getDownloadURL().then(url => {
+        db.collection("posts").add({
+          url: url,
+          type: file.type,
+          created: Date.now()
+        });
+        alert("? Upload erfolgreich!");
+      });
+    });
+  }
+</script>
+
+</body>
+</html>
